@@ -6,10 +6,8 @@ import {
   PieChart, Pie, Cell, Legend
 } from "recharts";
 
-/* Palette Asmabeauty */
 const AB = { black:"#000000", rosePoudre:"#F5E8E7", roseNude:"#F4E7E7" };
 
-/* Catégories */
 const CAT_PRESTATIONS = [
   "Extensions de cils : Pose cil à cil",
   "Extensions de cils : poses légères",
@@ -26,7 +24,6 @@ const CAT_DEPENSES = [
   "meta ads","meta verified","autres"
 ];
 
-/* Storage + helpers */
 const LS_KEY = "asmabeauty-data-v1";
 const fmtEur = (n)=> (n||0).toLocaleString("fr-FR",{style:"currency",currency:"EUR"});
 
@@ -38,15 +35,13 @@ const startOfYear=(d)=>{const x=new Date(d.getFullYear(), 0, 1);x.setHours(0,0,0
 const endOfYear=(d)=>{const x=new Date(d.getFullYear(), 11, 31);x.setHours(23,59,59,999);return x;};
 
 export default function AsmabeautyDashboard(){
-  /* Données locales */
   const [data, setData] = useState(()=>{
     try{ const raw=typeof window!=="undefined" && localStorage.getItem(LS_KEY); return raw? JSON.parse(raw):{prestations:[], depenses:[]}; }
     catch{ return {prestations:[], depenses:[]}; }
   });
   useEffect(()=>{ if (typeof window!=="undefined") localStorage.setItem(LS_KEY, JSON.stringify(data)); }, [data]);
 
-  /* Filtre de période */
-  const [vue, setVue] = useState("mois"); // "jour" | "mois" | "annee"
+  const [vue, setVue] = useState("mois");
   const [dateRef, setDateRef] = useState(()=> new Date());
   const periode = useMemo(()=>{
     const d=dateRef;
@@ -56,25 +51,20 @@ export default function AsmabeautyDashboard(){
   },[vue,dateRef]);
   const inPeriode = (iso)=>{ const t=new Date(iso).getTime(); return t>=periode.from.getTime() && t<=periode.to.getTime(); };
 
-  /* Découpes période */
   const prestationsPeriode = useMemo(()=> data.prestations.filter(p=> inPeriode(p.date)), [data.prestations,periode]);
   const depensesPeriode = useMemo(()=> data.depenses.filter(d=> inPeriode(d.date)), [data.depenses,periode]);
 
-  /* KPI */
   const caTotal = useMemo(()=> prestationsPeriode.reduce((s,p)=> s + (p.montant||0), 0), [prestationsPeriode]);
   const nbPrestations = prestationsPeriode.length;
   const panierMoyen = nbPrestations? caTotal/nbPrestations:0;
   const chargesVariables = depensesPeriode.filter(d=> d.variable).reduce((s,d)=> s+d.montant, 0);
   const margeNette = caTotal - chargesVariables;
 
-  /* CA vs mois précédent (affiché seulement en vue "mois") */
   const {prevLabel, prevCA} = useMemo(()=>{
     if(vue!=="mois") return {prevLabel:null, prevCA:null};
     const prev = new Date(dateRef.getFullYear(), dateRef.getMonth()-1, 15);
     const from = startOfMonth(prev).getTime(); const to = endOfMonth(prev).getTime();
-    const ca = data.prestations
-      .filter(p=>{ const t=new Date(p.date).getTime(); return t>=from && t<=to; })
-      .reduce((s,p)=>s+(p.montant||0),0);
+    const ca = data.prestations.filter(p=>{ const t=new Date(p.date).getTime(); return t>=from && t<=to; }).reduce((s,p)=>s+(p.montant||0),0);
     return { prevLabel: prev.toLocaleDateString("fr-FR",{month:"long",year:"numeric"}), prevCA: ca };
   },[vue,dateRef,data.prestations]);
   const caDeltaPct = useMemo(()=>{
@@ -83,7 +73,6 @@ export default function AsmabeautyDashboard(){
     return ((caTotal - prevCA)/prevCA)*100;
   },[caTotal,prevCA]);
 
-  /* Répartition par prestation (pie) */
   const repartition = useMemo(()=>{
     const map=new Map();
     prestationsPeriode.forEach(p=> map.set(p.categorie,(map.get(p.categorie)||0)+p.montant));
@@ -91,7 +80,6 @@ export default function AsmabeautyDashboard(){
     return Array.from(map.entries()).map(([name,value])=>({name,value,pct:Math.round((value/total)*100)}));
   },[prestationsPeriode]);
 
-  /* Taux de récurrence (retour entre 21 et 35 jours) */
   const tauxRecurrence = useMemo(()=>{
     const byClient=new Map();
     data.prestations.forEach(p=>{
@@ -103,15 +91,11 @@ export default function AsmabeautyDashboard(){
     let rec=0, tot=0;
     byClient.forEach(arr=>{
       arr.sort((a,b)=>a-b); tot+=1;
-      for(let i=1;i<arr.length;i++){
-        const d=Math.abs(arr[i]-arr[i-1])/(1000*60*60*24);
-        if(d>=21 && d<=35){rec+=1; break;}
-      }
+      for(let i=1;i<arr.length;i++){ const d=Math.abs(arr[i]-arr[i-1])/(1000*60*60*24); if(d>=21 && d<=35){rec+=1; break;} }
     });
     return tot? Math.round((rec/tot)*100):0;
   },[data.prestations]);
 
-  /* Série CA pour graphe barres */
   const serieCA = useMemo(()=>{
     const map=new Map();
     prestationsPeriode.forEach(p=>{
@@ -124,46 +108,17 @@ export default function AsmabeautyDashboard(){
     return Array.from(map.entries()).map(([name, montant])=>({name, montant}));
   },[prestationsPeriode, vue]);
 
-  /* Formulaires */
-  const [formP,setFormP]=useState({
-    date:new Date().toISOString(),
-    nom:"",prenom:"",adresse:"",email:"",telephone:"",
-    categorie:CAT_PRESTATIONS[0],
-    montant:"",commentaire:""
-  });
-  const [formD,setFormD]=useState({
-    date:new Date().toISOString(),
-    categorie:CAT_DEPENSES[0],
-    montant:"", commentaire:"", variable:true
-  });
+  const [formP,setFormP]=useState({date:new Date().toISOString(), nom:"",prenom:"",adresse:"",email:"",telephone:"",categorie:CAT_PRESTATIONS[0],montant:"",commentaire:""});
+  const [formD,setFormD]=useState({date:new Date().toISOString(), categorie:CAT_DEPENSES[0], montant:"", commentaire:"", variable:true});
 
-  /* Actions */
   const addPrestation=(e)=>{e.preventDefault();
-    const v={
-      id:crypto.randomUUID?.()||Math.random().toString(36).slice(2),
-      date:formP.date,
-      client:{nom:formP.nom,prenom:formP.prenom,adresse:formP.adresse,email:formP.email,telephone:formP.telephone},
-      categorie:formP.categorie,
-      montant:parseFloat(formP.montant||"0"),
-      commentaire:formP.commentaire
-    };
-    setData(d=>({...d, prestations:[v,...d.prestations]}));
-    setFormP({...formP, montant:"", commentaire:""});
+    const v={id:crypto.randomUUID?.()||Math.random().toString(36).slice(2), date:formP.date, client:{nom:formP.nom,prenom:formP.prenom,adresse:formP.adresse,email:formP.email,telephone:formP.telephone}, categorie:formP.categorie, montant:parseFloat(formP.montant||"0"), commentaire:formP.commentaire};
+    setData(d=>({...d, prestations:[v,...d.prestations]})); setFormP({...formP, montant:"", commentaire:""});
   };
-
   const addDepense=(e)=>{e.preventDefault();
-    const v={
-      id:crypto.randomUUID?.()||Math.random().toString(36).slice(2),
-      date:formD.date,
-      categorie:formD.categorie,
-      montant:parseFloat(formD.montant||"0"),
-      commentaire:formD.commentaire,
-      variable:!!formD.variable
-    };
-    setData(d=>({...d, depenses:[v,...d.depenses]}));
-    setFormD({...formD, montant:"", commentaire:""});
+    const v={id:crypto.randomUUID?.()||Math.random().toString(36).slice(2), date:formD.date, categorie:formD.categorie, montant:parseFloat(formD.montant||"0"), commentaire:formD.commentaire, variable:!!formD.variable};
+    setData(d=>({...d, depenses:[v,...d.depenses]})); setFormD({...formD, montant:"", commentaire:""});
   };
-
   const delP=(id)=> setData(d=>({...d, prestations:d.prestations.filter(p=>p.id!==id)}));
   const delD=(id)=> setData(d=>({...d, depenses:d.depenses.filter(p=>p.id!==id)}));
 
@@ -174,15 +129,11 @@ export default function AsmabeautyDashboard(){
     ];
     const csv=rows.map(r=>r.map(v=>`"${String(v??"").replaceAll('"','""')}"`).join(",")).join("\n");
     const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement("a"); a.href=url; a.download=`asmabeauty_export_${new Date().toISOString().slice(0,10)}.csv`; a.click();
-    URL.revokeObjectURL(url);
+    const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download=`asmabeauty_export_${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(url);
   };
 
-  /* UI */
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
-      {/* Header */}
       <header className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <img src="/asmabeauty-logo.svg" alt="Asmabeauty" className="h-10 w-auto rounded-xl" />
@@ -196,7 +147,6 @@ export default function AsmabeautyDashboard(){
         </button>
       </header>
 
-      {/* Barre filtres */}
       <div className="mb-6 rounded-2xl border border-zinc-200 bg-white shadow-sm">
         <div className="flex flex-wrap items-center gap-3 p-4">
           <div className="flex rounded-2xl border border-zinc-200 p-1">
@@ -219,25 +169,13 @@ export default function AsmabeautyDashboard(){
         </div>
       </div>
 
-      {/* KPI */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {[{
-          title:`CA ${vue==='mois'?'du mois':'de la période'}`,
-          value:fmtEur(caTotal),
-          extra:(prevCA!=null?`vs ${prevLabel}: ${Math.round(caDeltaPct)}%`:null)
-        },{
-          title:"Nombre de prestations",
-          value:nbPrestations,
-          extra:"Total enregistré(s)"
-        },{
-          title:"Panier moyen",
-          value:fmtEur(panierMoyen),
-          extra:"CA ÷ nb prestations"
-        },{
-          title:"Marge nette (période)",
-          value:fmtEur(margeNette),
-          extra:"Recettes – charges variables"
-        }].map((k,i)=>(
+        {[
+          {title:`CA ${vue==='mois'?'du mois':'de la période'}`, value:fmtEur(caTotal), extra:(prevCA!=null?`vs ${prevLabel}: ${Math.round(caDeltaPct)}%`:null)},
+          {title:"Nombre de prestations", value:nbPrestations, extra:"Total enregistré(s)"},
+          {title:"Panier moyen", value:fmtEur(panierMoyen), extra:"CA ÷ nb prestations"},
+          {title:"Marge nette (période)", value:fmtEur(margeNette), extra:"Recettes – charges variables"},
+        ].map((k,i)=>(
           <div key={i} className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="text-sm text-zinc-500">{k.title}</div>
             <div className="mt-1 text-3xl font-semibold text-black">{k.value}</div>
@@ -246,7 +184,6 @@ export default function AsmabeautyDashboard(){
         ))}
       </div>
 
-      {/* Graphiques */}
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm lg:col-span-2">
           <div className="mb-2 font-medium">Évolution du CA ({periode.label})</div>
@@ -277,9 +214,7 @@ export default function AsmabeautyDashboard(){
         </div>
       </div>
 
-      {/* Formulaires */}
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Prestations */}
         <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
           <div className="mb-2 text-lg font-semibold">Ajouter une prestation</div>
           <form onSubmit={addPrestation} className="space-y-4">
@@ -322,7 +257,6 @@ export default function AsmabeautyDashboard(){
           </form>
         </div>
 
-        {/* Dépenses */}
         <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
           <div className="mb-2 text-lg font-semibold">Ajouter une dépense</div>
           <form onSubmit={addDepense} className="space-y-4">
@@ -363,9 +297,7 @@ export default function AsmabeautyDashboard(){
         </div>
       </div>
 
-      {/* Tables */}
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Liste prestations */}
         <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
           <div className="mb-2 flex items-center justify-between">
             <div className="text-lg font-semibold">Prestations ({prestationsPeriode.length})</div>
@@ -401,7 +333,6 @@ export default function AsmabeautyDashboard(){
           </div>
         </div>
 
-        {/* Liste dépenses */}
         <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
           <div className="mb-2 flex items-center justify-between">
             <div className="text-lg font-semibold">Dépenses ({depensesPeriode.length})</div>
@@ -440,7 +371,6 @@ export default function AsmabeautyDashboard(){
         </div>
       </div>
 
-      {/* Pied de page */}
       <footer className="mt-10 text-center text-xs text-zinc-400">
         Design Asmabeauty — Noir & Roses poudrés • Données locales (navigateur)
       </footer>
