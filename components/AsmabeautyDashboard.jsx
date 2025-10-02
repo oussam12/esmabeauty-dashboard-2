@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
 import { Calendar as CalendarIcon, Plus, Trash2, Download } from "lucide-react";
@@ -26,7 +25,7 @@ const CAT_DEPENSES = [
 ];
 
 const LS_KEY = "asmabeauty-data-v1";
-const fmt€ = (n)=> (n||0).toLocaleString("fr-FR",{style:"currency",currency:"EUR"});
+const fmtEur = (n)=> (n||0).toLocaleString("fr-FR",{style:"currency",currency:"EUR"});
 
 const startOfDay=(d)=>{const x=new Date(d);x.setHours(0,0,0,0);return x;};
 const endOfDay=(d)=>{const x=new Date(d);x.setHours(23,59,59,999);return x;};
@@ -172,10 +171,10 @@ export default function AsmabeautyDashboard(){
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         {[
-          {title:`CA ${vue==='mois'?'du mois':'de la période'}`, value:fmt€(caTotal), extra:(prevCA!=null?`vs ${prevLabel}: ${Math.round(caDeltaPct)}%`:null)},
+          {title:`CA ${vue==='mois'?'du mois':'de la période'}`, value:fmtEur(caTotal), extra:(prevCA!=null?`vs ${prevLabel}: ${Math.round(caDeltaPct)}%`:null)},
           {title:"Nombre de prestations", value:nbPrestations, extra:"Total enregistré(s)"},
-          {title:"Panier moyen", value:fmt€(panierMoyen), extra:"CA ÷ nb prestations"},
-          {title:"Marge nette (période)", value:fmt€(margeNette), extra:"Recettes – charges variables"},
+          {title:"Panier moyen", value:fmtEur(panierMoyen), extra:"CA ÷ nb prestations"},
+          {title:"Marge nette (période)", value:fmtEur(margeNette), extra:"Recettes – charges variables"},
         ].map((k,i)=>(
           <div key={i} className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="text-sm text-zinc-500">{k.title}</div>
@@ -193,7 +192,7 @@ export default function AsmabeautyDashboard(){
               <BarChart data={serieCA}>
                 <XAxis dataKey="name" />
                 <YAxis />
-                <Tooltip formatter={(v)=> fmt€(Number(v))} />
+                <Tooltip formatter={(v)=> fmtEur(Number(v))} />
                 <Bar dataKey="montant" radius={[8,8,0,0]} fill={AB.black} />
               </BarChart>
             </ResponsiveContainer>
@@ -207,7 +206,7 @@ export default function AsmabeautyDashboard(){
                 <Pie data={repartition} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={2}>
                   {repartition.map((_,i)=>(<Cell key={i} fill={["#000000","#1f2937","#F4E7E7","#F5E8E7","#9ca3af","#d1d5db","#e5e7eb"][i % 7]} />))}
                 </Pie>
-                <Tooltip formatter={(v, n, p)=> [fmt€(Number(v)), p?.payload?.name]} />
+                <Tooltip formatter={(v, n, p)=> [fmtEur(Number(v)), p?.payload?.name]} />
                 <Legend verticalAlign="bottom" height={36} />
               </PieChart>
             </ResponsiveContainer>
@@ -225,92 +224,9 @@ export default function AsmabeautyDashboard(){
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-          <div className="mb-2 text-lg font-semibold">Ajouter une prestation</div>
-          <form onSubmit={addPrestation} className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-zinc-600">Date</label>
-                <input type="datetime-local" className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm shadow-sm"
-                  value={new Date(formP.date).toISOString().slice(0,16)} onChange={(e)=> setFormP({ ...formP, date: new Date(e.target.value).toISOString() })} />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-zinc-600">Catégorie</label>
-                <select className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm shadow-sm"
-                  value={formP.categorie} onChange={(e)=> setFormP({ ...formP, categorie:e.target.value })}>
-                  {CAT_PRESTATIONS.map(c=> <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-zinc-600">Montant</label>
-                <input type="number" step="0.01" className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm shadow-sm"
-                  value={formP.montant} onChange={(e)=> setFormP({ ...formP, montant:e.target.value })} placeholder="0,00" />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-zinc-600">Commentaire</label>
-                <input className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm shadow-sm"
-                  value={formP.commentaire} onChange={(e)=> setFormP({ ...formP, commentaire:e.target.value })} placeholder="Optionnel" />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div><label className="mb-1 block text-xs font-medium text-zinc-600">Nom</label><input className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm shadow-sm" value={formP.nom} onChange={(e)=> setFormP({ ...formP, nom:e.target.value })} /></div>
-              <div><label className="mb-1 block text-xs font-medium text-zinc-600">Prénom</label><input className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm shadow-sm" value={formP.prenom} onChange={(e)=> setFormP({ ...formP, prenom:e.target.value })} /></div>
-              <div><label className="mb-1 block text-xs font-medium text-zinc-600">Adresse</label><input className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm shadow-sm" value={formP.adresse} onChange={(e)=> setFormP({ ...formP, adresse:e.target.value })} /></div>
-              <div><label className="mb-1 block text-xs font-medium text-zinc-600">Email</label><input type="email" className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm shadow-sm" value={formP.email} onChange={(e)=> setFormP({ ...formP, email:e.target.value })} /></div>
-              <div className="md:col-span-2"><label className="mb-1 block text-xs font-medium text-zinc-600">Téléphone</label><input className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm shadow-sm" value={formP.telephone} onChange={(e)=> setFormP({ ...formP, telephone:e.target.value })} /></div>
-            </div>
-            <div className="flex justify-end">
-              <button type="submit" className="inline-flex items-center gap-2 rounded-2xl bg-black px-6 py-2 text-sm font-medium text-white hover:bg-zinc-900">
-                <Plus className="h-4 w-4" /> Enregistrer
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-          <div className="mb-2 text-lg font-semibold">Ajouter une dépense</div>
-          <form onSubmit={addDepense} className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-zinc-600">Date</label>
-                <input type="datetime-local" className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm shadow-sm"
-                  value={new Date(formD.date).toISOString().slice(0,16)} onChange={(e)=> setFormD({ ...formD, date: new Date(e.target.value).toISOString() })} />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-zinc-600">Catégorie</label>
-                <select className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm shadow-sm"
-                  value={formD.categorie} onChange={(e)=> setFormD({ ...formD, categorie:e.target.value })}>
-                  {CAT_DEPENSES.map(c=> <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-zinc-600">Montant</label>
-                <input type="number" step="0.01" className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm shadow-sm"
-                  value={formD.montant} onChange={(e)=> setFormD({ ...formD, montant:e.target.value })} placeholder="0,00" />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-zinc-600">Commentaire</label>
-                <input className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm shadow-sm"
-                  value={formD.commentaire} onChange={(e)=> setFormD({ ...formD, commentaire:e.target.value })} placeholder="Optionnel" />
-              </div>
-              <label className="inline-flex cursor-pointer items-center gap-2 text-sm md:col-span-2">
-                <input type="checkbox" className="h-4 w-4" checked={!!formD.variable} onChange={(e)=> setFormD({ ...formD, variable:e.target.checked })} />
-                Charge variable (comptée dans la marge)
-              </label>
-            </div>
-            <div className="flex justify-end">
-              <button type="submit" className="inline-flex items-center gap-2 rounded-2xl bg-black px-6 py-2 text-sm font-medium text-white hover:bg-zinc-900">
-                <Plus className="h-4 w-4" /> Enregistrer
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
           <div className="mb-2 flex items-center justify-between">
             <div className="text-lg font-semibold">Prestations ({prestationsPeriode.length})</div>
-            <span className="inline-flex items-center rounded-full border border-zinc-200 bg-[#F5E8E7] px-2.5 py-0.5 text-xs">{fmt€(caTotal)}</span>
+            <span className="inline-flex items-center rounded-full border border-zinc-200 bg-[#F5E8E7] px-2.5 py-0.5 text-xs">{fmtEur(caTotal)}</span>
           </div>
           <div className="max-h-96 overflow-auto rounded-xl border border-zinc-200">
             <table className="w-full text-sm">
@@ -329,7 +245,7 @@ export default function AsmabeautyDashboard(){
                     <td className="px-3 py-2">{new Date(p.date).toLocaleString("fr-FR")}</td>
                     <td className="px-3 py-2">{p.client.prenom} {p.client.nom}<div className="text-xs text-zinc-500">{p.client.telephone}</div></td>
                     <td className="px-3 py-2">{p.categorie}</td>
-                    <td className="px-3 py-2 font-medium">{fmt€(p.montant)}</td>
+                    <td className="px-3 py-2 font-medium">{fmtEur(p.montant)}</td>
                     <td className="px-3 py-2 text-right">
                       <button onClick={()=> delP(p.id)} className="text-rose-600 hover:underline" title="Supprimer">
                         <Trash2 className="inline h-4 w-4" />
@@ -346,7 +262,7 @@ export default function AsmabeautyDashboard(){
           <div className="mb-2 flex items-center justify-between">
             <div className="text-lg font-semibold">Dépenses ({depensesPeriode.length})</div>
             <span className="inline-flex items-center rounded-full border border-zinc-200 bg-[#F4E7E7] px-2.5 py-0.5 text-xs">
-              {fmt€(depensesPeriode.reduce((s,d)=> s + d.montant, 0))}
+              {fmtEur(depensesPeriode.reduce((s,d)=> s + d.montant, 0))}
             </span>
           </div>
           <div className="max-h-96 overflow-auto rounded-xl border border-zinc-200">
@@ -365,7 +281,7 @@ export default function AsmabeautyDashboard(){
                   <tr key={d.id} className="border-t">
                     <td className="px-3 py-2">{new Date(d.date).toLocaleString("fr-FR")}</td>
                     <td className="px-3 py-2">{d.categorie}</td>
-                    <td className="px-3 py-2 font-medium">{fmt€(d.montant)}</td>
+                    <td className="px-3 py-2 font-medium">{fmtEur(d.montant)}</td>
                     <td className="px-3 py-2">{d.variable? <span className="inline-flex items-center rounded-full border border-zinc-200 bg-[#F5E8E7] px-2.5 py-0.5 text-xs">Oui</span> : <span className="inline-flex items-center rounded-full border border-zinc-200 px-2.5 py-0.5 text-xs">Non</span>}</td>
                     <td className="px-3 py-2 text-right">
                       <button onClick={()=> delD(d.id)} className="text-rose-600 hover:underline" title="Supprimer">
