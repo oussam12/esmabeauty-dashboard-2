@@ -1,3 +1,5 @@
-import AsmabeautyDashboard from "../components/AsmabeautyDashboard";
+import AsmabeautyDashboard from "./../components/AsmabeautyDashboard";
 
-export default function Home(){ return <AsmabeautyDashboard />; }
+export default function Home() {
+  return <AsmabeautyDashboard />;
+}
